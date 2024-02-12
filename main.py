@@ -2,6 +2,7 @@ import os
 import sys
 
 import requests
+from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
@@ -36,6 +37,10 @@ class Yandex_MAP(QWidget):
         self.image.resize(600, 450)
         self.image.setPixmap(self.pixmap)
 
+    def update_map(self):
+        self.pixmap = QPixmap(self.map_file)
+        self.image.setPixmap(self.pixmap)
+
     def get_Image(self, url, params):
         response = requests.get(url, params)
 
@@ -52,9 +57,28 @@ class Yandex_MAP(QWidget):
     def closeEvent(self, event):
         os.remove(self.map_file)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key.Key_PageUp:
+            self.delta = str(float(self.delta) + 0.002)
+            self.params['spn'] = ",".join([self.delta, self.delta])
+        if event.key() == QtCore.Qt.Key.Key_PageDown:
+            if float(self.delta) - 0.002 > 0:
+                self.delta = str(float(self.delta) - 0.002)
+                self.params['spn'] = ",".join([self.delta, self.delta])
+
+
+        self.get_Image(self.url, params=self.params)
+        self.update_map()
+
+
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Yandex_MAP()
     ex.show()
+    sys.excepthook = except_hook
     sys.exit(app.exec())
