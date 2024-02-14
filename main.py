@@ -14,16 +14,16 @@ class Yandex_MAP(QWidget):
         super().__init__()
 
         self.url = 'http://static-maps.yandex.ru/1.x/'
-        self.lon, self.lat = '37.530887', '55.703118'
-        self.delta = '0.002'
+        self.lon, self.lat = 37.530887, 55.703118
+        self.delta = 0.002
 
         self.params = {
-            "ll": ",".join([self.lon, self.lat]),
-            "spn": ",".join([self.delta, self.delta]),
+            "ll": ",".join([str(self.lon), str(self.lat)]),
+            "spn": ",".join([str(self.delta), str(self.delta)]),
             "l": "map"
         }
 
-        self.get_Image(self.url, params=self.params)
+        self.get_Image()
         self.initUI()
 
     def initUI(self):
@@ -41,12 +41,18 @@ class Yandex_MAP(QWidget):
         self.pixmap = QPixmap(self.map_file)
         self.image.setPixmap(self.pixmap)
 
-    def get_Image(self, url, params):
-        response = requests.get(url, params)
+    def get_Image(self):
+        self.params = {
+            "ll": ",".join([str(self.lon), str(self.lat)]),
+            "spn": ",".join([str(self.delta), str(self.delta)]),
+            "l": "map"
+            }
+
+        response = requests.get(self.url, self.params)
 
         if not response:
             print("Ошибка выполнения запроса:")
-            print(url, params)
+            print(self.url, self.params)
             print("Http статус:", response.status_code, "(", response.reason, ")")
             sys.exit(1)
 
@@ -54,22 +60,33 @@ class Yandex_MAP(QWidget):
         with open(self.map_file, "wb") as file:
             file.write(response.content)
 
-    def closeEvent(self, event):
-        os.remove(self.map_file)
-
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key.Key_PageUp:
-            self.delta = str(float(self.delta) + 0.002)
-            self.params['spn'] = ",".join([self.delta, self.delta])
-        if event.key() == QtCore.Qt.Key.Key_PageDown:
-            if float(self.delta) - 0.002 > 0:
-                self.delta = str(float(self.delta) - 0.002)
-                self.params['spn'] = ",".join([self.delta, self.delta])
+        # if event.key() == QtCore.Qt.Key.Key_PageUp:
+        if event.key() == QtCore.Qt.Key.Key_W:
+            self.delta = self.delta + 0.002
 
+        # if event.key() == QtCore.Qt.Key.Key_PageDown:
+        if event.key() == QtCore.Qt.Key.Key_S:
+            if self.delta - 0.002 > 0:
+                self.delta = self.delta - 0.002
 
-        self.get_Image(self.url, params=self.params)
+        if event.key() == QtCore.Qt.Key.Key_Right:
+            self.lon += (self.lon / 12) * self.delta
+
+        if event.key() == QtCore.Qt.Key.Key_Left:
+            self.lon -= (self.lon / 12) * self.delta
+
+        if event.key() == QtCore.Qt.Key.Key_Up:
+            self.lat += (self.lon / 23) * self.delta
+
+        if event.key() == QtCore.Qt.Key.Key_Down:
+            self.lat -= (self.lon / 23) * self.delta
+
+        self.get_Image()
         self.update_map()
 
+    def closeEvent(self, event):
+        os.remove(self.map_file)
 
 
 def except_hook(cls, exception, traceback):
